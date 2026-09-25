@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { createBooking, type BookingState } from "@/app/actions";
 import { GRADES } from "@/lib/constants";
 import { shortDate, timeLabel } from "@/lib/format";
-import type { SlotView } from "./DayTabs";
+import type { SlotView } from "./types";
 
 export function BookingModal({
   dayIso,

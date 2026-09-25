@@ -13,13 +13,14 @@ export type Day = { iso: string; slots: Slot[] };
  * `hourCycle: "h23"` é obrigatório: com `hour12: false` alguns runtimes devolvem
  * "24" à meia-noite, o que quebra as comparações de hora.
  */
-export function nowInSaoPaulo(now: Date): { iso: string; hour: number } {
+export function nowInSaoPaulo(now: Date): { iso: string; hour: number; minute: number } {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: TIMEZONE,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
+    minute: "2-digit",
     hourCycle: "h23",
   }).formatToParts(now);
 
@@ -27,6 +28,7 @@ export function nowInSaoPaulo(now: Date): { iso: string; hour: number } {
   return {
     iso: `${get("year")}-${get("month")}-${get("day")}`,
     hour: Number(get("hour")),
+    minute: Number(get("minute")),
   };
 }
 
@@ -79,4 +81,32 @@ export function isSlotPast(iso: string, hour: number, now: Date): boolean {
   if (iso < current.iso) return true;
   if (iso > current.iso) return false;
   return hour <= current.hour;
+}
+
+export type Week = { startIso: string; days: Day[] };
+
+/** Domingo da semana que contém a data, como o Google Calendar. */
+function weekStartIso(iso: string): string {
+  const anchor = isoToAnchor(iso);
+  anchor.setUTCDate(anchor.getUTCDate() - anchor.getUTCDay());
+  return anchorToIso(anchor);
+}
+
+/**
+ * Agrupa os dias de monitoria por semana, para a grade de semana.
+ *
+ * A primeira e a última semana podem vir incompletas: se hoje é quinta, a terça
+ * daquela semana já passou e não entra na janela.
+ */
+export function groupIntoWeeks(days: Day[]): Week[] {
+  const byWeek = new Map<string, Day[]>();
+  for (const day of days) {
+    const start = weekStartIso(day.iso);
+    const list = byWeek.get(start);
+    if (list) list.push(day);
+    else byWeek.set(start, [day]);
+  }
+  return [...byWeek.entries()]
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([startIso, weekDays]) => ({ startIso, days: weekDays }));
 }

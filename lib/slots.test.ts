@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { nowInSaoPaulo, buildDays, isSlotPast } from "./slots";
+import { nowInSaoPaulo, buildDays, isSlotPast, groupIntoWeeks } from "./slots";
 
 describe("nowInSaoPaulo", () => {
   it("devolve a data de calendário de São Paulo, não a de UTC", () => {
@@ -79,5 +79,46 @@ describe("isSlotPast", () => {
     const noite = new Date("2026-10-02T02:30:00Z"); // 23:30 de 01/10 em SP
     expect(isSlotPast("2026-10-01", 14, noite)).toBe(true);
     expect(isSlotPast("2026-10-06", 14, noite)).toBe(false);
+  });
+});
+
+describe("nowInSaoPaulo — minuto", () => {
+  it("devolve o minuto, usado para posicionar a linha do agora", () => {
+    const r = nowInSaoPaulo(new Date("2026-10-02T02:30:00Z"));
+    expect(r.hour).toBe(23);
+    expect(r.minute).toBe(30);
+  });
+});
+
+describe("groupIntoWeeks", () => {
+  // Hoje e quinta 2026-09-24. A terca daquela semana (dia 22) ja passou.
+  const days = buildDays(new Date("2026-09-24T15:00:00Z"));
+  const weeks = groupIntoWeeks(days);
+
+  it("agrupa as 3 semanas da janela em 4 blocos de semana", () => {
+    expect(weeks.length).toBe(4);
+  });
+
+  it("comeca a semana no domingo, como o Google Calendar", () => {
+    // 2026-09-20 e domingo.
+    expect(weeks[0].startIso).toBe("2026-09-20");
+  });
+
+  it("a primeira semana vem incompleta quando a terca ja passou", () => {
+    expect(weeks[0].days.map((d) => d.iso)).toEqual(["2026-09-24"]);
+  });
+
+  it("as semanas do meio trazem terca e quinta", () => {
+    expect(weeks[1].days.map((d) => d.iso)).toEqual(["2026-09-29", "2026-10-01"]);
+    expect(weeks[2].days.map((d) => d.iso)).toEqual(["2026-10-06", "2026-10-08"]);
+  });
+
+  it("as semanas saem em ordem cronologica", () => {
+    const starts = weeks.map((w) => w.startIso);
+    expect([...starts].sort()).toEqual(starts);
+  });
+
+  it("nao perde nenhum dia no agrupamento", () => {
+    expect(weeks.flatMap((w) => w.days).length).toBe(days.length);
   });
 });

@@ -1,7 +1,7 @@
-import { buildDays, isSlotPast } from "@/lib/slots";
+import { buildDays, groupIntoWeeks, isSlotPast, nowInSaoPaulo } from "@/lib/slots";
 import { getBookings, getBlockedSlots } from "@/lib/db";
 import { Scheduler } from "@/components/Scheduler";
-import type { DayView, SlotStatus } from "@/components/DayTabs";
+import type { NowView, SlotStatus, WeekView } from "@/components/types";
 
 // Sempre dados frescos: a grade muda conforme outros alunos reservam.
 export const dynamic = "force-dynamic";
@@ -39,21 +39,32 @@ export default async function Home() {
     return "free";
   }
 
-  const view: DayView[] = days.map((day) => ({
-    iso: day.iso,
-    slots: day.slots.map((slot) => ({
-      id: slot.id,
-      hour: slot.hour,
-      status: statusOf(day.iso, slot.id, slot.hour),
+  const weeks: WeekView[] = groupIntoWeeks(days).map((week) => ({
+    startIso: week.startIso,
+    days: week.days.map((day) => ({
+      iso: day.iso,
+      slots: day.slots.map((slot) => ({
+        id: slot.id,
+        hour: slot.hour,
+        status: statusOf(day.iso, slot.id, slot.hour),
+      })),
     })),
   }));
+
+  // O "agora" vem do servidor, no fuso de São Paulo: o relógio do navegador do
+  // aluno pode estar em outro fuso, e usá-lo causaria divergência na hidratação.
+  const nowView: NowView = nowInSaoPaulo(now);
 
   return (
     <div className="wrap">
       <header>
         <div className="kicker">Monitoria</div>
         <h1>Agende seu horário</h1>
-        <p>Terças e quintas · aulas de 1h, das 14h às 19h</p>
+        <ul className="facts">
+          <li>Terças e quintas</li>
+          <li>Aulas de 1 hora</li>
+          <li>Das 14h às 19h</li>
+        </ul>
       </header>
 
       {dbError && (
@@ -62,9 +73,9 @@ export default async function Home() {
         </div>
       )}
 
-      <Scheduler days={view} />
+      <Scheduler weeks={weeks} now={nowView} />
 
-      <footer>Escolha um horário livre para reservar.</footer>
+      <footer>Toque num horário livre para reservar.</footer>
     </div>
   );
 }

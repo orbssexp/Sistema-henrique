@@ -39,3 +39,35 @@ export function brDate(iso: string): string {
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
 }
+
+/** "TER" — cabeçalho de coluna da grade de semana. */
+export function weekdayAbbrev(iso: string): string {
+  return DIAS_CURTO[parts(iso).weekday].toUpperCase();
+}
+
+/** 29 — o número do dia, mostrado grande sob o dia da semana. */
+export function dayNumber(iso: string): number {
+  return parts(iso).d;
+}
+
+/** "14h" — rótulo da calha de horas, alinhado à linha. */
+export function hourLabel(hour: number): string {
+  return `${hour}h`;
+}
+
+/**
+ * "setembro 2026", ou "set – out 2026" quando a semana cruza a virada do mês.
+ * É o título que acompanha as setas de navegação.
+ */
+export function monthRangeLabel(isoList: string[]): string {
+  if (isoList.length === 0) return "";
+  const first = parts(isoList[0]);
+  const last = parts(isoList[isoList.length - 1]);
+  if (first.m === last.m && first.y === last.y) {
+    return `${MESES_LONGOS[first.m - 1]} ${first.y}`;
+  }
+  if (first.y === last.y) {
+    return `${MESES[first.m - 1]} – ${MESES[last.m - 1]} ${first.y}`;
+  }
+  return `${MESES[first.m - 1]} ${first.y} – ${MESES[last.m - 1]} ${last.y}`;
+}

@@ -49,9 +49,13 @@
     min-height: 100%;
     background: var(--bg);
     color: var(--text);
-    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, "Times New Roman", serif;
     line-height: 1.5;
+    /* Fonte unica em todo o app. --font-sans vem do next/font em app/layout.tsx. */
+    font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
   }
+
+  /* Controles de formulario nao herdam a fonte por padrao. */
+  button, input, select, textarea { font-family: inherit; }
   .wrap {
     max-width: 760px;
     margin: 0 auto;
@@ -62,7 +66,6 @@
     margin-bottom: 22px;
   }
   header .kicker {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     font-size: 12px;
@@ -73,6 +76,7 @@
     margin: 6px 0 4px;
     font-size: 30px;
     font-weight: 600;
+    letter-spacing: -0.02em;
   }
   header p {
     margin: 0;
@@ -80,7 +84,6 @@
     font-size: 15px;
   }
   .status-banner {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 13px;
     background: var(--surface-2);
     border: 1px solid var(--border);
@@ -91,74 +94,6 @@
     display: none;
   }
   .status-banner.show { display: block; }
-  .day-tabs {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    padding-bottom: 6px;
-    margin-bottom: 18px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .day-tab {
-    flex: 0 0 auto;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 9px 16px;
-    font-size: 13.5px;
-    color: var(--text);
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background .15s, color .15s, border-color .15s;
-  }
-  .day-tab.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-    font-weight: 600;
-  }
-  .slots {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 10px;
-  }
-  .slot {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 12px;
-    text-align: center;
-    cursor: pointer;
-    box-shadow: var(--shadow);
-    transition: transform .12s;
-  }
-  .slot:hover { transform: translateY(-2px); }
-  .slot .time {
-    font-size: 17px;
-    font-weight: 600;
-  }
-  .slot .tag {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: 11.5px;
-    color: var(--accent);
-    margin-top: 4px;
-    font-weight: 600;
-  }
-  .slot.taken {
-    background: var(--taken-bg);
-    cursor: default;
-    box-shadow: none;
-    opacity: 0.75;
-  }
-  .slot.taken:hover { transform: none; }
-  .slot.taken .tag { color: var(--text-muted); }
-  .slot.taken .who {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 4px;
-  }
 
   .overlay {
     position: fixed;
@@ -184,14 +119,12 @@
     font-size: 20px;
   }
   .modal .modal-sub {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     color: var(--text-muted);
     font-size: 13.5px;
     margin-bottom: 16px;
   }
   .field {
     margin-bottom: 14px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
   .field label {
     display: block;
@@ -208,7 +141,6 @@
     background: var(--surface-2);
     color: var(--text);
     font-size: 14.5px;
-    font-family: inherit;
   }
   .field textarea { resize: vertical; min-height: 54px; }
   .topic-choice {
@@ -218,7 +150,6 @@
   }
   .topic-choice button {
     flex: 1;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     padding: 8px 6px;
     border-radius: 8px;
     border: 1px solid var(--border);
@@ -237,7 +168,6 @@
     display: flex;
     gap: 10px;
     margin-top: 18px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
   .btn {
     flex: 1;
@@ -253,7 +183,6 @@
   .error-msg {
     color: var(--danger);
     font-size: 12.5px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     margin-top: -6px;
     margin-bottom: 10px;
     display: none;
@@ -269,48 +198,17 @@
   footer {
     text-align: center;
     margin-top: 30px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 12px;
     color: var(--text-muted);
   }
 
-  /* ---------- Estados novos, que não existiam na referência ---------- */
-
-  /* Slot livre vira <button>, não <div onclick>: ganha foco por teclado e
-     leitura por leitor de tela. Estas regras mantêm a aparência idêntica. */
-  button.slot {
-    font-family: inherit;
-    color: inherit;
-    width: 100%;
-    display: block;
-  }
-  .slot:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
+  /* ---------- Alvos de toque ---------- */
 
   /* Horário fechado pelo monitor. */
-  .slot.blocked {
-    background: var(--taken-bg);
-    cursor: default;
-    box-shadow: none;
-    opacity: 0.55;
-  }
-  .slot.blocked:hover { transform: none; }
-  .slot.blocked .tag { color: var(--text-muted); }
 
   /* Horário cujo bloco já começou. */
-  .slot.past {
-    background: var(--surface-2);
-    cursor: default;
-    box-shadow: none;
-    opacity: 0.4;
-  }
-  .slot.past:hover { transform: none; }
-  .slot.past .tag { color: var(--text-muted); }
 
   /* Alvos de toque de 44px no mínimo. */
-  .day-tab { min-height: 44px; }
   .btn { min-height: 44px; }
 
   /* ---------- Painel do monitor ---------- */
@@ -320,7 +218,6 @@
     align-items: center;
     flex-wrap: wrap;
     margin-bottom: 22px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
   .monitor-nav a {
     padding: 9px 14px;
@@ -375,7 +272,6 @@
   }
   .slot-row .detail {
     flex: 1 1 180px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 13.5px;
     color: var(--text-muted);
   }
@@ -383,7 +279,6 @@
   .slot-row .row-actions {
     display: flex;
     gap: 8px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
   .btn-mini {
@@ -395,7 +290,6 @@
     color: var(--text);
     font-size: 12.5px;
     cursor: pointer;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
   .btn-mini.danger { color: var(--danger); border-color: var(--danger); }
 
@@ -412,7 +306,6 @@
     padding: 14px;
   }
   .stat .label {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 11.5px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -426,7 +319,6 @@
   table.report {
     width: 100%;
     border-collapse: collapse;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 13.5px;
   }
   table.report th, table.report td {
@@ -457,8 +349,228 @@
     text-align: center;
     padding: 34px 18px;
     color: var(--text-muted);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 14px;
   }
 
   .login-wrap { max-width: 380px; }
+
+  /* ---------- Grade de semana (estilo visão de semana do Google Calendar) ---------- */
+
+  /* Alturas fixas: a linha do "agora" é posicionada por cálculo em cima delas,
+     então ela precisa saber exatamente quanto mede cada linha de hora. */
+  .wg {
+    --wg-head: 56px;
+    --wg-row: 68px;
+    --wg-gutter: 46px;
+
+    display: grid;
+    grid-template-columns: var(--wg-gutter) repeat(var(--cols), minmax(0, 1fr));
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .wg-corner {
+    height: var(--wg-head);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 6px;
+    font-size: 9.5px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .wg-head {
+    height: var(--wg-head);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    border-bottom: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+  }
+  .wg-wd {
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .wg-num {
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.15;
+    min-width: 30px;
+    text-align: center;
+  }
+  /* Hoje ganha o círculo preenchido, como no Google Calendar. */
+  .wg-num.today {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 999px;
+    padding: 1px 0;
+  }
+
+  .wg-body {
+    grid-column: 1 / -1;
+    position: relative;
+  }
+
+  .wg-row {
+    display: grid;
+    grid-template-columns: var(--wg-gutter) repeat(var(--cols), minmax(0, 1fr));
+    height: var(--wg-row);
+  }
+
+  /* O rótulo fica no topo da linha, alinhado à divisória — a hora marca o
+     início do bloco, não o meio dele. */
+  .wg-gutter {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    text-align: right;
+    padding: 4px 7px 0 0;
+    border-top: 1px solid var(--border);
+  }
+  .wg-row:first-child .wg-gutter { border-top: none; }
+
+  .wg-cell {
+    border-top: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    padding: 3px;
+  }
+  .wg-row:first-child .wg-cell { border-top: none; }
+
+  .wg-slot {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2px;
+  }
+
+  .wg-slot.free {
+    background: var(--surface-2);
+    color: var(--accent);
+    border: 1px dashed var(--border);
+    cursor: pointer;
+    transition: background .12s, border-color .12s;
+  }
+  .wg-slot.free:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    border-style: solid;
+    color: #fff;
+  }
+  .wg-slot.free:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  /* Reservado é um bloco cheio, como um evento no Google Calendar. */
+  .wg-slot.taken {
+    background: var(--accent);
+    color: #fff;
+    opacity: 0.92;
+  }
+  .wg-slot.blocked {
+    background: var(--taken-bg);
+    color: var(--text-muted);
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 5px,
+      var(--border) 5px,
+      var(--border) 6px
+    );
+  }
+  .wg-slot.past {
+    background: transparent;
+    color: var(--text-muted);
+    opacity: 0.4;
+  }
+
+  /* Linha do agora: posicionada pelo offset em horas desde o início da grade. */
+  .wg-now {
+    position: absolute;
+    left: var(--wg-gutter);
+    right: 0;
+    top: calc(var(--offset) * var(--wg-row));
+    height: 2px;
+    background: var(--danger);
+    z-index: 2;
+    pointer-events: none;
+  }
+  .wg-now::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--danger);
+  }
+
+  /* Navegação de semana. */
+  .wg-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .wg-arrow {
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 19px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .wg-arrow:disabled, .wg-nav .btn-mini:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .wg-month {
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: capitalize;
+    margin-left: 2px;
+  }
+
+  /* No celular a calha encolhe e os rótulos diminuem, para sobrar largura
+     para as colunas de dia. */
+  @media (max-width: 420px) {
+    .wg { --wg-gutter: 38px; --wg-row: 62px; }
+    .wg-slot { font-size: 11px; }
+    .wg-num { font-size: 18px; }
+    .wg-month { font-size: 14px; }
+  }
+
+  /* Informações do cabeçalho em lista. inline-block com texto à esquerda
+     centraliza o bloco inteiro sem desalinhar os marcadores entre si. */
+  .facts {
+    list-style: disc;
+    display: inline-block;
+    text-align: left;
+    margin: 10px 0 0;
+    padding-left: 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  .facts li { margin: 3px 0; }
+  .facts li::marker { color: var(--accent); }
