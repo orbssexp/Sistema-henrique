@@ -3,6 +3,7 @@ import { getBookings, getBlockedSlots, type Booking } from "@/lib/db";
 import { longDate, timeLabel } from "@/lib/format";
 import { CancelButton } from "@/components/CancelButton";
 import { BlockToggle } from "@/components/BlockToggle";
+import { LoadError } from "@/components/LoadError";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +17,13 @@ export default async function AgendaPage() {
 
   const from = days[0].iso;
   const to = days[days.length - 1].iso;
-  const [bookings, blocks] = await Promise.all([
-    getBookings(from, to),
-    getBlockedSlots(from, to),
-  ]);
+
+  let bookings, blocks;
+  try {
+    [bookings, blocks] = await Promise.all([getBookings(from, to), getBlockedSlots(from, to)]);
+  } catch {
+    return <LoadError />;
+  }
 
   const bySlot = new Map<string, Booking>(
     bookings.map((b) => [`${b.slot_date}_${b.slot_hour}`, b])

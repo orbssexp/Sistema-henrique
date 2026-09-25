@@ -1,14 +1,20 @@
 import { getBookingsForReport, getSubjectCounts, getGradeCounts } from "@/lib/db";
 import { brDate, timeLabel } from "@/lib/format";
+import { LoadError } from "@/components/LoadError";
 
 export const dynamic = "force-dynamic";
 
 export default async function RelatorioPage() {
-  const [bookings, subjects, grades] = await Promise.all([
-    getBookingsForReport(),
-    getSubjectCounts(),
-    getGradeCounts(),
-  ]);
+  let bookings, subjects, grades;
+  try {
+    [bookings, subjects, grades] = await Promise.all([
+      getBookingsForReport(),
+      getSubjectCounts(),
+      getGradeCounts(),
+    ]);
+  } catch {
+    return <LoadError />;
+  }
 
   return (
     <>
