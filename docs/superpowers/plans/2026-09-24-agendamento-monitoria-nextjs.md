@@ -2229,3 +2229,64 @@ git push
 - [ ] Nenhum segredo commitado: `git log -p | grep -iE "SESSION_SECRET=.|MONITOR_PASSWORD=.|postgres://"` não retorna nada
 - [ ] `.env.local` está ignorado: `git check-ignore -v .env.local` confirma
 - [ ] Checklist de produção da Task 17 Step 3 inteiro marcado
+
+---
+
+## Desvios do plano durante a execução
+
+Registrado depois de executar. O plano foi escrito supondo Next 15; o scaffold trouxe
+Next 16, e a verificação contra Postgres de verdade achou dois erros no plano.
+
+### O que a versão do Next mudou
+
+1. **`create-next-app` instalou Next 16.3.6**, não 15. O `AGENTS.md` que ele gera manda ler
+   `node_modules/next/dist/docs/` antes de escrever código, porque há breaking changes.
+2. **`middleware.ts` virou `proxy.ts`**, e a função exportada chama-se `proxy`. Além disso o
+   proxy **não roda em Edge** no Next 16 — o runtime é Node e não é configurável.
+3. **A doc do Next diz que proxy é checagem otimista, não autorização.** Por isso a sessão
+   passou a ser validada *também* em `app/monitor/(painel)/layout.tsx`. A justificativa do
+   Web Crypto em `lib/auth.ts` mudou: não é mais "porque o Edge não tem `node:crypto`", e sim
+   para a mesma função servir a qualquer runtime.
+4. **`@types/node` precisou subir para `^24`.** O scaffold fixa `^20`, que conflita com o
+   peer range do vitest 5 numa máquina com Node 24.
+5. **A pasta temporária não pode começar com ponto** — o npm recusa `.tmp-next` por regra de
+   nome de pacote. Usar `tmp-next`.
+
+### Erros no plano, encontrados testando o SQL
+
+Verificação feita com PGlite (Postgres em WASM), instalado e removido depois, sem exigir
+Docker nem banco remoto. Doze checagens, todas passando ao final.
+
+1. **`GROUP BY lower(btrim(subject))` não agrupava acento.** `'matemática'` e `'matematica'`
+   são strings diferentes depois de `lower`, então as grafias caíam em grupos separados —
+   exatamente a sujeira que o campo livre deveria ter normalizado. Corrigido com `translate()`
+   mapeando os 24 caracteres acentuados do português, o que evita depender da extensão
+   `unaccent` (que exigiria `CREATE EXTENSION` no banco).
+2. **O driver devolve `DATE` como objeto `Date`, não string.** O valor chega como
+   `Wed Oct 07 2026 21:00:00 GMT-0300` para a data `2026-10-08`. O branch `getUTC*` de
+   `toIso()` não era paranoia: é o caminho real, e um `getFullYear()` ingênuo teria produzido
+   a data errada por um dia em **todas** as reservas.
+3. **O comentário sobre transação estava impreciso.** O driver HTTP do Neon *tem*
+   `sql.transaction([...])`, mas só para um lote decidido de antemão — não serve para "ler,
+   decidir, gravar". A conclusão (checagem dentro do INSERT) não mudou; a justificativa sim.
+
+### Erro encontrado rodando a aplicação
+
+**`error.tsx` não basta para falha de banco no painel.** Verificado em build de produção: com
+o banco fora do ar, `/monitor` devolvia 500 com shell vazio, porque o error boundary é um
+client component e só renderiza depois da hidratação. A agenda e o relatório passaram a
+capturar a falha e renderizar o aviso no servidor (`components/LoadError.tsx`), devolvendo 200
+com mensagem. O `error.tsx` ficou como rede de segurança para erros inesperados.
+
+### Melhorias pequenas não previstas
+
+- `components/LoadError.tsx` — aviso compartilhado pelas duas telas do painel.
+- `.slot:focus-visible` com contorno, já que os slots livres viraram `<button>`.
+- Classes `.panel-header`, `.day-card h3.plain`, `.stat .value.small` e `.login-wrap`
+  substituíram os `style={{...}}` inline que o plano usava, mantendo todo o estilo no CSS.
+
+### O que ainda não foi verificado
+
+Todo o caminho de escrita contra o banco real: criar reserva, cancelar, bloquear. O SQL foi
+validado contra Postgres em WASM, mas o app nunca falou com um Neon de verdade — falta a
+`DATABASE_URL`. É o que as Tasks 16 e 17 cobrem.
