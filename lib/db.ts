@@ -78,10 +78,13 @@ export type CreateResult = { ok: true } | { ok: false; reason: "taken" | "blocke
 /**
  * Grava a reserva numa única instrução.
  *
- * O driver HTTP do Neon não faz transação multi-statement, então a checagem de
- * bloqueio vai dentro do próprio INSERT. Zero linhas retornadas = o horário está
- * bloqueado. Erro 23505 (unique_violation) = alguém reservou primeiro. Não existe
- * janela de corrida: quem decide é o índice do banco, não a aplicação.
+ * O driver HTTP do Neon tem sql.transaction([...]), mas só para um lote de
+ * queries decidido de antemão — não dá para ler, decidir e então gravar. Por isso
+ * a checagem de bloqueio vai dentro do próprio INSERT, e não numa consulta antes.
+ *
+ * Zero linhas retornadas = o horário está bloqueado. Erro 23505 (unique_violation)
+ * = alguém reservou primeiro. Não existe janela de corrida: quem decide é o índice
+ * do banco, não a aplicação.
  */
 export async function createBooking(input: {
   slotDate: string;
@@ -149,19 +152,29 @@ export async function getBookingsForReport(): Promise<Booking[]> {
 }
 
 /**
- * Agrega por matéria. Como o aluno digita livre, normalizamos com
- * lower(btrim(...)) para "Matemática", "matematica " e "MATEMÁTICA" caírem no
- * mesmo grupo — e mostramos a grafia mais frequente na tela.
+ * Agrega por matéria. Como o aluno digita livre, normalizamos para que
+ * "Matemática", "matematica " e "MATEMÁTICA" caiam no mesmo grupo — e mostramos
+ * a grafia mais frequente na tela.
+ *
+ * lower(btrim(...)) sozinho NÃO basta: "matemática" e "matematica" continuariam
+ * grupos diferentes por causa do acento. translate() remove os acentos sem
+ * exigir a extensão unaccent, que precisaria de CREATE EXTENSION no banco.
  */
+const NORMALIZE_SUBJECT =
+  "translate(lower(btrim(subject)), 'áàâãäéèêëíìîïóòôõöúùûüçñ', 'aaaaaeeeeiiiiooooouuuucn')";
+
 export async function getSubjectCounts(): Promise<{ subject: string; total: number }[]> {
-  const rows = await db()`
-    SELECT mode() WITHIN GROUP (ORDER BY subject) AS subject, COUNT(*)::int AS total
-    FROM bookings
-    WHERE cancelled_at IS NULL
-    GROUP BY lower(btrim(subject))
-    ORDER BY total DESC, 1
-  `;
-  return rows.map((r) => ({ subject: String(r.subject), total: Number(r.total) }));
+  const rows = await db().query(
+    `SELECT mode() WITHIN GROUP (ORDER BY subject) AS subject, COUNT(*)::int AS total
+     FROM bookings
+     WHERE cancelled_at IS NULL
+     GROUP BY ${NORMALIZE_SUBJECT}
+     ORDER BY total DESC, 1`
+  );
+  return rows.map((r: Record<string, unknown>) => ({
+    subject: String(r.subject),
+    total: Number(r.total),
+  }));
 }
 
 export async function getGradeCounts(): Promise<{ grade: string; total: number }[]> {
