@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Monitoria de Matemática — Agende seu horário</title>
+<style>
+  :root {
+    --bg: #f7f5f2;
+    --surface: #ffffff;
+    --surface-2: #f0eee9;
+    --text: #1f2320;
+    --text-muted: #6b6f6a;
+    --accent: #2f6f4f;
+    --accent-2: #dd7a3c;
+    --border: #e2ded6;
+    --danger: #b3452e;
+    --taken-bg: #ece7e0;
+    --shadow: 0 6px 20px rgba(30, 30, 20, 0.08);
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16181a;
+      --surface: #1f2225;
+      --surface-2: #262a2d;
+      --text: #eceae5;
+      --text-muted: #9a9d98;
+      --accent: #5fae86;
+      --accent-2: #e79a5c;
+      --border: #333734;
+      --danger: #e08268;
+      --taken-bg: #2a2c2b;
+      --shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16181a;
+    --surface: #1f2225;
+    --surface-2: #262a2d;
+    --text: #eceae5;
+    --text-muted: #9a9d98;
+    --accent: #5fae86;
+    --accent-2: #e79a5c;
+    --border: #333734;
+    --danger: #e08268;
+    --taken-bg: #2a2c2b;
+    --shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, "Times New Roman", serif;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 28px 18px 60px;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  header .kicker {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  header h1 {
+    margin: 6px 0 4px;
+    font-size: 30px;
+    font-weight: 600;
+  }
+  header p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 15px;
+  }
+  .status-banner {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 13px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    display: none;
+  }
+  .status-banner.show { display: block; }
+  .day-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 18px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .day-tab {
+    flex: 0 0 auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 9px 16px;
+    font-size: 13.5px;
+    color: var(--text);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .day-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  .slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+  }
+  .slot {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 12px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: transform .12s;
+  }
+  .slot:hover { transform: translateY(-2px); }
+  .slot .time {
+    font-size: 17px;
+    font-weight: 600;
+  }
+  .slot .tag {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 11.5px;
+    color: var(--accent);
+    margin-top: 4px;
+    font-weight: 600;
+  }
+  .slot.taken {
+    background: var(--taken-bg);
+    cursor: default;
+    box-shadow: none;
+    opacity: 0.75;
+  }
+  .slot.taken:hover { transform: none; }
+  .slot.taken .tag { color: var(--text-muted); }
+  .slot.taken .who {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 18, 14, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 50;
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 24px 22px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: var(--shadow);
+  }
+  .modal h2 {
+    margin: 0 0 4px;
+    font-size: 20px;
+  }
+  .modal .modal-sub {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--text-muted);
+    font-size: 13.5px;
+    margin-bottom: 16px;
+  }
+  .field {
+    margin-bottom: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--text-muted);
+  }
+  .field input, .field textarea, .field select {
+    width: 100%;
+    padding: 10px 11px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 14.5px;
+    font-family: inherit;
+  }
+  .field textarea { resize: vertical; min-height: 54px; }
+  .topic-choice {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .topic-choice button {
+    flex: 1;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: 8px 6px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .topic-choice button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  .btn {
+    flex: 1;
+    padding: 11px;
+    border-radius: 9px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-ghost { background: var(--surface-2); color: var(--text); }
+  .error-msg {
+    color: var(--danger);
+    font-size: 12.5px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin-top: -6px;
+    margin-bottom: 10px;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+
+  .confirm-screen { text-align: center; }
+  .confirm-screen .check {
+    font-size: 40px;
+    margin-bottom: 6px;
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 30px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="kicker">Monitoria de Matemática</div>
+      <h1>Agende seu horário</h1>
+      <p>Terças e quintas · aulas de 1h, das 14h às 19h</p>
+    </header>
+
+    <div class="status-banner" id="statusBanner"></div>
+
+    <div class="day-tabs" id="dayTabs"></div>
+    <div class="slots" id="slotsGrid"></div>
+
+    <footer>Escolha um horário livre para reservar.</footer>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal" id="modalBox"></div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Slot generation ----------
+  var START_HOUR = 14, END_HOUR = 19; // 14h-19h, blocos de 1h, sem intervalo
+  var DAYS_AHEAD_WEEKS = 3;
+
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+  function isoDate(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function fmtDate(d) {
+    var dias = ["dom","seg","ter","qua","qui","sex","sáb"];
+    var meses = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+    return dias[d.getDay()] + " " + d.getDate() + " " + meses[d.getMonth()];
+  }
+
+  function buildDays() {
+    var days = [];
+    var today = new Date();
+    today.setHours(0,0,0,0);
+    var end = new Date(today);
+    end.setDate(end.getDate() + DAYS_AHEAD_WEEKS * 7);
+    var cursor = new Date(today);
+    while (cursor <= end) {
+      var wd = cursor.getDay(); // 2 = terça, 4 = quinta
+      if (wd === 2 || wd === 4) {
+        var slots = [];
+        for (var h = START_HOUR; h < END_HOUR; h++) {
+          slots.push({ hour: h, id: isoDate(cursor) + "_" + h });
+        }
+        days.push({ date: new Date(cursor), iso: isoDate(cursor), label: fmtDate(cursor), slots: slots });
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return days;
+  }
+
+  var DAYS = buildDays();
+  var activeDayIso = DAYS.length ? DAYS[0].iso : null;
+  var bookings = {}; // slotId -> {studentName, topic}
+  var dbNs = null;
+  var useSharedDb = false;
+  var clientId = "c" + Math.random().toString(36).slice(2) + Date.now();
+
+  var LOCAL_KEY = "monitoria_bookings_local_v1";
+  function loadLocal() {
+    try {
+      var raw = localStorage.getItem(LOCAL_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+  function saveLocal(data) {
+    try { localStorage.setItem(LOCAL_KEY, JSON.stringify(data)); } catch (e) {}
+  }
+
+  var statusBanner = document.getElementById("statusBanner");
+  function showBanner(text) {
+    statusBanner.textContent = text;
+    statusBanner.classList.add("show");
+  }
+
+  // ---------- Rendering ----------
+  var dayTabsEl = document.getElementById("dayTabs");
+  var slotsGridEl = document.getElementById("slotsGrid");
+
+  function renderTabs() {
+    dayTabsEl.innerHTML = "";
+    DAYS.forEach(function (day) {
+      var btn = document.createElement("button");
+      btn.className = "day-tab" + (day.iso === activeDayIso ? " active" : "");
+      btn.textContent = day.label;
+      btn.onclick = function () { activeDayIso = day.iso; renderTabs(); renderSlots(); };
+      dayTabsEl.appendChild(btn);
+    });
+  }
+
+  function timeLabel(hour) {
+    return pad(hour) + "h–" + pad(hour + 1) + "h";
+  }
+
+  function renderSlots() {
+    slotsGridEl.innerHTML = "";
+    var day = DAYS.filter(function (d) { return d.iso === activeDayIso; })[0];
+    if (!day) return;
+    day.slots.forEach(function (slot) {
+      var booking = bookings[slot.id];
+      var el = document.createElement("div");
+      el.className = "slot" + (booking ? " taken" : "");
+      var timeHtml = '<div class="time">' + timeLabel(slot.hour) + "</div>";
+      if (booking) {
+        var topicText = booking.topic === "__questoes__" ? "Resolução de questões" : (booking.topic || "");
+        var whoLine = escapeHtml(booking.studentName || "");
+        if (booking.grade) whoLine += " · " + escapeHtml(booking.grade);
+        if (topicText) whoLine += " · " + escapeHtml(topicText);
+        el.innerHTML = timeHtml +
+          '<div class="tag">Reservado</div>' +
+          '<div class="who">' + whoLine + '</div>';
+      } else {
+        el.innerHTML = timeHtml + '<div class="tag">Disponível</div>';
+        el.onclick = function () { openBookingModal(day, slot); };
+      }
+      slotsGridEl.appendChild(el);
+    });
+  }
+
+  function escapeHtml(s) {
+    var div = document.createElement("div");
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  // ---------- Booking modal ----------
+  var overlay = document.getElementById("overlay");
+  var modalBox = document.getElementById("modalBox");
+
+  function closeModal() { overlay.classList.remove("show"); modalBox.innerHTML = ""; }
+  overlay.addEventListener("click", function (e) { if (e.target === overlay) closeModal(); });
+
+  function openBookingModal(day, slot) {
+    var chosenTopicMode = "questoes"; // "questoes" | "conteudo"
+    modalBox.innerHTML =
+      '<h2>Reservar horário</h2>' +
+      '<div class="modal-sub">' + day.label + " · " + timeLabel(slot.hour) + '</div>' +
+      '<div class="field">' +
+        '<label>Seu nome</label>' +
+        '<input type="text" id="fName" placeholder="Nome completo" />' +
+      '</div>' +
+      '<div class="field">' +
+        '<label>Série</label>' +
+        '<select id="fGrade">' +
+          '<option value="">Selecione</option>' +
+          '<option value="6º ano (Fundamental)">6º ano (Fundamental)</option>' +
+          '<option value="7º ano (Fundamental)">7º ano (Fundamental)</option>' +
+          '<option value="8º ano (Fundamental)">8º ano (Fundamental)</option>' +
+          '<option value="9º ano (Fundamental)">9º ano (Fundamental)</option>' +
+          '<option value="1º ano (Ensino Médio)">1º ano (Ensino Médio)</option>' +
+          '<option value="2º ano (Ensino Médio)">2º ano (Ensino Médio)</option>' +
+          '<option value="3º ano (Ensino Médio)">3º ano (Ensino Médio)</option>' +
+          '<option value="Cursinho/Vestibular">Cursinho/Vestibular</option>' +
+          '<option value="Outro">Outro</option>' +
+        '</select>' +
+      '</div>' +
+      '<div class="field">' +
+        '<label>O que você quer estudar?</label>' +
+        '<div class="topic-choice">' +
+          '<button type="button" id="btnQuestoes" class="active">Resolução de questões</button>' +
+          '<button type="button" id="btnConteudo">Conteúdo específico</button>' +
+        '</div>' +
+        '<textarea id="fTopic" placeholder="Ex: derivadas, matriz inversa..." style="display:none;"></textarea>' +
+      '</div>' +
+      '<div class="error-msg" id="modalError"></div>' +
+      '<div class="modal-actions">' +
+        '<button class="btn btn-ghost" id="btnCancel">Cancelar</button>' +
+        '<button class="btn btn-primary" id="btnConfirm">Confirmar</button>' +
+      '</div>';
+
+    var topicArea = modalBox.querySelector("#fTopic");
+    var btnQuestoes = modalBox.querySelector("#btnQuestoes");
+    var btnConteudo = modalBox.querySelector("#btnConteudo");
+    btnQuestoes.onclick = function () {
+      chosenTopicMode = "questoes";
+      btnQuestoes.classList.add("active");
+      btnConteudo.classList.remove("active");
+      topicArea.style.display = "none";
+    };
+    btnConteudo.onclick = function () {
+      chosenTopicMode = "conteudo";
+      btnConteudo.classList.add("active");
+      btnQuestoes.classList.remove("active");
+      topicArea.style.display = "block";
+    };
+
+    modalBox.querySelector("#btnCancel").onclick = closeModal;
+    modalBox.querySelector("#btnConfirm").onclick = function () {
+      var name = modalBox.querySelector("#fName").value.trim();
+      var grade = modalBox.querySelector("#fGrade").value;
+      var topic = chosenTopicMode === "questoes" ? "__questoes__" : topicArea.value.trim();
+      var errEl = modalBox.querySelector("#modalError");
+      if (!name) {
+        errEl.textContent = "Escreva seu nome para continuar.";
+        errEl.classList.add("show");
+        return;
+      }
+      if (!grade) {
+        errEl.textContent = "Selecione sua série.";
+        errEl.classList.add("show");
+        return;
+      }
+      if (chosenTopicMode === "conteudo" && !topic) {
+        errEl.textContent = "Diga qual conteúdo você quer estudar.";
+        errEl.classList.add("show");
+        return;
+      }
+      errEl.classList.remove("show");
+      submitBooking(day, slot, name, grade, topic, errEl);
+    };
+
+    overlay.classList.add("show");
+  }
+
+  function showConfirmScreen(day, slot, name, grade) {
+    modalBox.innerHTML =
+      '<div class="confirm-screen">' +
+        '<div class="check">✅</div>' +
+        '<h2>Reserva confirmada!</h2>' +
+        '<div class="modal-sub">' + escapeHtml(name) + (grade ? " · " + escapeHtml(grade) : "") + " · " + day.label + " · " + timeLabel(slot.hour) + '</div>' +
+        '<div class="modal-actions"><button class="btn btn-primary" id="btnDone" style="flex:1">Fechar</button></div>' +
+      '</div>';
+    modalBox.querySelector("#btnDone").onclick = closeModal;
+  }
+
+  async function submitBooking(day, slot, name, grade, topic, errEl) {
+    if (useSharedDb && dbNs) {
+      try {
+        var ref = dbNs.doc("bookings/" + slot.id);
+        var lease = await ref.acquire({ holder: clientId, ttlMs: 6000 });
+        if (!lease.acquired) {
+          errEl.textContent = "Alguém está reservando esse horário agora. Tente de novo em alguns segundos.";
+          errEl.classList.add("show");
+          return;
+        }
+        var snap = await ref.get();
+        if (snap.exists && snap.data() && snap.data().studentName) {
+          errEl.textContent = "Esse horário acabou de ser reservado por outra pessoa.";
+          errEl.classList.add("show");
+          renderSlots();
+          return;
+        }
+        await ref.set({
+          date: day.iso,
+          hour: slot.hour,
+          studentName: name,
+          grade: grade,
+          topic: topic,
+          createdAt: Date.now()
+        });
+        showConfirmScreen(day, slot, name, grade);
+      } catch (e) {
+        errEl.textContent = "Não consegui salvar a reserva agora. Tente de novo.";
+        errEl.classList.add("show");
+      }
+    } else {
+      // fallback local (sem sincronização entre visitantes)
+      bookings[slot.id] = { studentName: name, grade: grade, topic: topic };
+      var local = loadLocal();
+      local[slot.id] = bookings[slot.id];
+      saveLocal(local);
+      renderSlots();
+      showConfirmScreen(day, slot, name, grade);
+    }
+  }
+
+  // ---------- Data source setup ----------
+  async function initData() {
+    var localData = loadLocal();
+    bookings = Object.assign({}, localData);
+    renderTabs();
+    renderSlots();
+
+    try {
+      dbNs = (window.claude && typeof window.claude.use === "function")
+        ? await window.claude.use("db")
+        : null;
+    } catch (e) {
+      dbNs = null;
+    }
+
+    if (dbNs) {
+      useSharedDb = true;
+      try {
+        dbNs.collection("bookings").onSnapshot(function (snap) {
+          var fresh = {};
+          snap.docs.forEach(function (doc) {
+            var d = doc.data();
+            if (d && d.studentName) {
+              fresh[doc.id] = { studentName: d.studentName, grade: d.grade, topic: d.topic };
+            }
+          });
+          bookings = fresh;
+          renderSlots();
+        }, function () {
+          useSharedDb = false;
+          showBanner("Não foi possível sincronizar as reservas em tempo real agora — as reservas feitas aqui ficam salvas só neste navegador.");
+        });
+      } catch (e) {
+        useSharedDb = false;
+        showBanner("Não foi possível sincronizar as reservas em tempo real agora — as reservas feitas aqui ficam salvas só neste navegador.");
+      }
+    } else {
+      showBanner("As reservas feitas aqui ficam salvas apenas neste navegador (sem login não é possível sincronizar com outros visitantes).");
+    }
+  }
+
+  initData();
+})();
+</script>
+</body>
+</html>
