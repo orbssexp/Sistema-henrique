@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { SESSION_COOKIE, verifySession } from "@/lib/auth";
+import { isMonitor } from "@/lib/session";
 import { logout } from "../actions";
 
 /**
@@ -13,8 +12,7 @@ import { logout } from "../actions";
  * proxy é checagem otimista, não autorização.
  */
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
-  const authorized = await verifySession((await cookies()).get(SESSION_COOKIE)?.value);
-  if (!authorized) redirect("/monitor/login");
+  if (!(await isMonitor())) redirect("/monitor/login");
 
   return (
     <div className="wrap">

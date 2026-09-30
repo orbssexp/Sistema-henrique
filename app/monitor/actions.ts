@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { SESSION_COOKIE, THIRTY_DAYS_MS, passwordMatches, signSession } from "@/lib/auth";
 import * as db from "@/lib/db";
+import { requireMonitor } from "@/lib/session";
 
 export type LoginState = { error?: string };
 
@@ -47,6 +48,7 @@ export async function logout(): Promise<void> {
 }
 
 export async function cancelBooking(formData: FormData): Promise<void> {
+  await requireMonitor();
   const id = Number(formData.get("id"));
   if (!Number.isInteger(id) || id <= 0) return;
   await db.cancelBooking(id);
@@ -56,6 +58,7 @@ export async function cancelBooking(formData: FormData): Promise<void> {
 }
 
 export async function blockSlot(formData: FormData): Promise<void> {
+  await requireMonitor();
   const iso = String(formData.get("iso") ?? "");
   const hour = Number(formData.get("hour"));
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso) || !Number.isInteger(hour)) return;
@@ -65,6 +68,7 @@ export async function blockSlot(formData: FormData): Promise<void> {
 }
 
 export async function unblockSlot(formData: FormData): Promise<void> {
+  await requireMonitor();
   const iso = String(formData.get("iso") ?? "");
   const hour = Number(formData.get("hour"));
   if (!/^\d{4}-\d{2}-\d{2}$/.test(iso) || !Number.isInteger(hour)) return;
